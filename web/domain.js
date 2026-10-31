@@ -1,3 +1,4 @@
+import { emptyExpenses, validateExpenses, demoExpenses } from './expenses.js';
 export const SCHEMA_VERSION = 1;
 export const CURRENCIES = ['CNY', 'USD', 'HKD', 'EUR', 'GBP', 'JPY', 'SGD', 'AUD', 'CAD'];
 export const ASSET_GROUPS = [
@@ -24,7 +25,7 @@ export function searchAssets(assets, selection = {}) {
   const matches = inCategory.filter(a => (!account || a.account === account) && (!keyword || [a.name, a.account, a.category, a.currency].some(value => value.toLocaleLowerCase().includes(keyword))));
   return { groups, categories, accounts, selection: { group, category, account, query }, matches };
 }
-export const emptyData = () => ({ version: SCHEMA_VERSION, assets: [], snapshots: [] });
+export const emptyData = () => ({ version: SCHEMA_VERSION, assets: [], snapshots: [], expenses: emptyExpenses() });
 export const uid = () => crypto.randomUUID();
 export function today() {
   const d = new Date();
@@ -237,7 +238,9 @@ export function validateData(input) {
     }
     if (i > 0) for (const old of sorted[i - 1].positions) assert(s.positions.some(p => p.asset.id === old.asset.id), '历史资产必须保留；清仓请将金额记为 0 并填写取出资金');
   });
-  return structuredClone(input);
+  const expenses = validateExpenses(input.expenses), checked = structuredClone(input);
+  if (input.expenses !== undefined) checked.expenses = expenses;
+  return checked;
 }
 
 export function demoData() {
@@ -254,5 +257,5 @@ export function demoData() {
     { id: 'demo-alipay', name: '支付宝备用金', account: '支付宝', category: '活期存款', region: 'domestic', kind: 'savings', currency: 'CNY' }
   ];
   const values = [[25000, 18000, 40000, 5000, 8000, 2000, 5000], [25012, 18960, 43200, 5012, 8240, 2000, 5014]];
-  return { version: 1, assets, snapshots: [startDate, d].map((date, i) => ({ id: uid(), date, rates: { CNY: 1, USD: i ? 7.1 : 7.12 }, positions: assets.map((asset, j) => ({ asset: { ...asset }, value: values[i][j], flows: i && j === 2 ? [{ date, amount: 2000 }] : [], income: 0 })) })) };
+  return { version: 1, assets, expenses: demoExpenses(d.slice(0, 7)), snapshots: [startDate, d].map((date, i) => ({ id: uid(), date, rates: { CNY: 1, USD: i ? 7.1 : 7.12 }, positions: assets.map((asset, j) => ({ asset: { ...asset }, value: values[i][j], flows: i && j === 2 ? [{ date, amount: 2000 }] : [], income: 0 })) })) };
 }

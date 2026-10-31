@@ -1,0 +1,2 @@
+# Forward only public currency/date queries. Query parameters are preserved.
+/api/exchange-rates https://api.frankfurter.dev/v2/rates 200

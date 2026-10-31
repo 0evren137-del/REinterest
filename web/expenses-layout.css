@@ -1,0 +1,133 @@
+:root{--expense-spent:#527b51;--expense-committed:#c4a65d;--expense-planned:#93b8c0;--expense-debt:#c78069}
+.expense-mode-fields{border:1px solid #e1e8d9;border-radius:10px;margin:18px 0;padding:16px;min-width:0}.expense-mode-fields legend{font-size:12px;color:#6c855b;padding:0 7px}.expense-mode-fields[hidden]{display:none}.expense-check{flex-direction:row;align-items:center;font-size:12px;margin:16px 0}.expense-check input{width:16px;height:16px;padding:0;flex-shrink:0}
+.space-switch{display:flex;gap:4px;padding:4px;background:#eef2e7;border:1px solid #e0e7d7;border-radius:10px}
+.page-heading>div:has(.expense-map-scroll){width:100%;min-width:0}.expense-map-scroll{max-width:100%;overflow-x:auto;padding:6px 0 12px;scrollbar-width:thin}.expense-map{display:flex;align-items:center;min-width:520px;width:100%;padding:4px 4px 4px 0}.expense-map-root{display:flex;align-items:center;flex-shrink:0}.expense-map-root:after{content:'';width:28px;border-top:1px solid #c7d5bd}.expense-map-home{font-size:27px;font-weight:650;color:#375d3d;background:#edf3e6;border:1px solid #ceddc2;border-radius:10px;padding:16px 20px;white-space:nowrap}.expense-map-home.selected{background:#244f3b;color:#fff;border-color:#244f3b}.expense-map-branches{flex:1;min-width:0}.expense-map-branch{position:relative;display:flex;align-items:center;padding:8px 0 8px 26px;min-height:62px}.expense-map-branch:before{content:'';position:absolute;left:0;top:0;bottom:0;border-left:1px solid #c7d5bd}.expense-map-branch:first-child:before{top:50%}.expense-map-branch:last-child:before{bottom:50%}.expense-map-branch:only-child:before{display:none}.expense-map-branch:after{content:'';position:absolute;left:0;top:50%;width:26px;border-top:1px solid #c7d5bd}.expense-map-group{display:flex;align-items:center;flex-shrink:0}.expense-map-group:after{content:'';width:24px;border-top:1px solid #c7d5bd}.expense-map-node{position:relative;border:1px solid #dae4d2;background:#fff;color:#6f8263;border-radius:8px;padding:10px 15px;font-size:12px;min-height:39px;max-width:230px;overflow-wrap:anywhere;text-align:left;line-height:1.5}.expense-map-node:hover,.expense-map-home:hover{border-color:#7d9d68;box-shadow:0 2px 8px #39533312}.expense-map-node.in-path{background:#eef4e7;border-color:#becfae;color:#446b3f}.expense-map-node.selected{background:#325d40;border-color:#325d40;color:#fff}.expense-map-categories{display:flex;align-items:center;flex-wrap:wrap;gap:9px 12px;min-width:0;padding:3px 0}.expense-map-categories>.expense-map-node:before{content:'';position:absolute;width:12px;border-top:1px solid #c7d5bd;left:-13px;top:50%}.expense-map-categories>.expense-map-node:first-child:before{display:none}.expense-map-context{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%)}.expense-toolbar>.button-row:empty{display:none}
+@media(max-width:640px){.expense-map-home{font-size:21px;padding:13px 15px}.expense-map-root:after{width:19px}.expense-map-branch{padding-left:19px}.expense-map-branch:after{width:19px}.expense-map-group:after{width:17px}.expense-map-node{font-size:11px;padding:9px 12px;max-width:170px}}
+.space-tab{padding:9px 20px;border-radius:7px;background:transparent;color:#819075;font-size:12px;font-weight:600;white-space:nowrap}
+.space-tab.selected{background:#fff;color:#28583d;box-shadow:0 1px 5px #213d1c12}
+.expense-analysis-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(300px,1fr);gap:22px;margin-bottom:22px}
+.expense-analysis-grid>.panel{margin:0;min-width:0}
+.expense-analysis-grid .expense-chart{width:100%;min-width:590px;max-width:none;height:auto;min-height:220px}
+.expense-destinations{display:flex;align-items:center;gap:20px;padding:12px 23px 25px;flex-wrap:wrap;justify-content:center}
+.expense-destinations .donut{width:133px;height:133px}
+.expense-destination-list{flex:1;min-width:150px;max-height:250px;overflow-y:auto;scrollbar-width:thin}
+.expense-destination-row{display:flex;align-items:center;gap:9px;padding:10px 0;border-bottom:1px solid #eff2e9;font-size:11px}
+.expense-destination-row>svg{flex-shrink:0}.expense-destination-row>div{flex:1;min-width:0;overflow-wrap:anywhere}
+.expense-destination-row .text-button{font-size:12px;padding:0;white-space:normal;text-align:left}
+.expense-destination-row small{display:block;color:#92a086;font-size:10px;margin-top:5px}
+.expense-destination-row>strong{flex-shrink:0;font-weight:500;font-size:12px}
+.expense-destination-row>div>strong{font-size:12px;font-weight:600}
+.expense-manage-filters{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;padding:20px 24px;margin-bottom:22px}
+.expense-manage-filters label{flex:1;min-width:140px;font-size:11px;color:#7f9072;font-weight:500}
+.expense-manage-filters .expense-query{flex:1.5}.expense-manage-filters input,.expense-manage-filters select{font-size:12px;font-weight:400}
+.expense-manage-filters>.text-button{font-size:11px;margin-bottom:4px}
+.expense-breadcrumb{display:flex;align-items:center;gap:10px;font-size:12px;color:#8a9b7c;margin:-10px 0 20px;flex-wrap:wrap}
+.expense-breadcrumb strong{color:#4a6d45;font-size:12px;overflow-wrap:anywhere}.expense-breadcrumb button{font-size:12px}
+.expense-card-title{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.expense-category-grid .expense-card-title .text-button{padding:0;font-size:11px}
+.expense-share-bar{width:100%;height:6px;margin:17px 0}
+.expense-category-grid article>strong small{font-size:10px;font-weight:400;color:#8d9c82}
+.expense-group-links{display:flex;gap:10px;flex-wrap:wrap;padding:0 24px 20px}
+.expense-ledger .panel-heading+.table-scroll{border-top:1px solid #eff2e9}
+.expense-overview-label{display:flex;align-items:center;gap:14px;margin:0 0 14px}.expense-overview-label h2{font-size:15px}.expense-overview-label>span{font-size:11px;color:#8b997e}
+.expense-overview-trend .expense-chart{width:100%;min-width:650px;height:auto;max-height:300px}
+.expense-trend-filters{margin:0 24px;padding:10px 0;border-top:1px solid #edf1e6;border-bottom:1px solid #edf1e6}
+.expense-trend-filters .expense-filter-line{padding:6px 0}.expense-trend-filters .search-chip{min-height:33px;padding:6px 12px}
+.expense-trend-summary{display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:17px 25px 15px;font-size:11px;color:#8b997e;line-height:1.8}
+.expense-trend-summary>strong{font-size:13px;color:#3e6645}.expense-trend-summary b{color:#496444;font-weight:500;margin-left:4px}
+.expense-overview-secondary{display:grid;grid-template-columns:minmax(280px,1fr) minmax(0,1.6fr);gap:22px}.expense-overview-secondary>.panel{min-width:0;margin-bottom:0}
+.expense-overview .expense-metrics .metric-value{margin:20px 0 16px}.expense-overview .expense-metrics .hero-number{margin:20px 0 18px}
+@media(max-width:1150px){.expense-overview-secondary{grid-template-columns:1fr}}
+@media(max-width:1150px){.expense-analysis-grid{grid-template-columns:1fr}.expense-destinations{justify-content:flex-start}.expense-destination-list{max-height:240px}.expense-destinations .donut{width:155px;height:155px}}
+@media(max-width:640px){
+  .sidebar nav{grid-template-columns:repeat(5,1fr)}
+  .space-switch{padding:3px;gap:2px}.space-tab{font-size:11px;padding:7px 13px}.topbar{gap:12px;height:60px}.privacy{font-size:8px}
+  .expense-analysis-grid{gap:16px;margin-bottom:17px}.expense-analysis-grid .expense-chart{min-width:590px;min-height:210px}
+  .expense-destinations{padding:8px 18px 22px;gap:17px}.expense-destinations .donut{width:112px;height:112px}.expense-destination-list{min-width:115px}
+  .expense-destination-row{font-size:10px;gap:6px}.expense-destination-row>strong,.expense-destination-row .text-button,.expense-destination-row>div>strong{font-size:11px}
+  .expense-destination-row small{font-size:9px}.expense-manage-filters{padding:17px;gap:13px;margin-bottom:17px}.expense-manage-filters label{min-width:calc(50% - 14px);font-size:10px}.expense-manage-filters .expense-query{min-width:100%}.expense-breadcrumb{font-size:10px;margin:-5px 0 14px;gap:7px}.expense-breadcrumb button,.expense-breadcrumb strong{font-size:10px}.expense-group-links{padding:0 17px 17px}
+  .expense-trend-filters{margin:0 17px}.expense-trend-filters .search-chip{padding:6px 9px;font-size:10px}.expense-trend-summary{padding:13px 18px;gap:6px 15px;font-size:10px}.expense-trend-summary>strong{width:100%;font-size:12px}.expense-overview-secondary{gap:17px}.expense-overview-label{margin-bottom:12px;gap:10px}.expense-overview-label h2{font-size:14px}
+}
+
+/* Keep the comparison controls and charts in the same first-screen footprint. */
+body.expense-compact .topbar{height:54px}
+body.expense-compact .content{padding-top:14px}
+body.expense-compact .page-heading{margin-bottom:8px}
+body.expense-compact .page-heading .eyebrow,body.expense-compact .page-heading p{display:none}
+body.expense-compact .demo-banner{margin-bottom:10px;padding:3px 12px;font-size:10px;min-height:28px}
+body.expense-compact .demo-banner .text-button{font-size:10px;padding:4px}
+body.expense-compact .expense-map-scroll{padding:2px 0 5px;max-height:116px;overflow:auto}
+body.expense-compact .expense-map{min-width:0;width:max-content;padding:2px 1px;gap:0}
+body.expense-compact .expense-map-root h1{font-size:14px;line-height:1.4}
+body.expense-compact .expense-map-home{font-size:14px;padding:7px 12px;border-radius:7px;min-height:34px}
+body.expense-compact .expense-map-root:after{width:16px}
+body.expense-compact .expense-map-branches{display:block;flex:none}
+body.expense-compact .expense-map-branch{min-height:38px;padding:3px 0 3px 18px}
+body.expense-compact .expense-map-branch:before{display:block;left:0;top:0;bottom:0}
+body.expense-compact .expense-map-branch:first-child:before{top:50%}
+body.expense-compact .expense-map-branch:last-child:before{bottom:50%}
+body.expense-compact .expense-map-branch:only-child:before{display:none}
+body.expense-compact .expense-map-branch:after{left:0;width:18px}
+body.expense-compact .expense-map-node{font-size:11px;min-height:32px;padding:6px 10px;max-width:200px;white-space:nowrap;line-height:1.4;border-radius:6px}
+body.expense-compact .expense-map-group:after{width:12px}
+body.expense-compact .expense-map-categories{flex-wrap:nowrap;padding:0;gap:12px}
+body.expense-compact .expense-toolbar{margin-bottom:9px;gap:8px}
+body.expense-compact .expense-month-controls{gap:8px}
+body.expense-compact .expense-month-controls label{flex-direction:row;align-items:center;font-size:10px;gap:7px}
+body.expense-compact .expense-month-controls input{margin:0;width:142px;min-height:32px;padding:5px 8px;font-size:11px}
+body.expense-compact .expense-month-controls>.secondary{min-height:30px;padding:2px 10px;font-size:17px}
+body.expense-compact .expense-toolbar .primary,body.expense-compact .expense-toolbar .secondary{font-size:11px;padding:6px 11px;min-height:32px}
+body.expense-compact .expense-toolbar .text-button{font-size:11px;padding:5px}
+body.expense-compact .expense-overview-label{margin-bottom:7px;gap:10px}
+body.expense-compact .expense-overview-label h2{font-size:12px}
+body.expense-compact .expense-overview-label>span{font-size:10px}
+body.expense-compact .expense-metrics{grid-template-columns:1.2fr 1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+body.expense-compact .expense-metrics .metric-card,body.expense-compact .expense-metrics .total-card{padding:14px 16px;min-height:105px;grid-column:auto}
+body.expense-compact .expense-metrics .hero-number,body.expense-compact .expense-metrics .metric-value{font-size:25px;margin:13px 0 10px;line-height:1.1}
+body.expense-compact .expense-metrics .card-label{font-size:10px}
+body.expense-compact .expense-metrics p{font-size:9px;line-height:1.6}
+body.expense-compact .expense-analysis-grid{grid-template-columns:minmax(0,1.7fr) minmax(260px,1fr);gap:12px;margin-bottom:12px}
+body.expense-compact .panel-heading{padding:13px 16px 9px;gap:8px}
+body.expense-compact .panel-heading h2{font-size:13px}
+body.expense-compact .panel-heading p{font-size:10px;margin-top:3px}
+body.expense-compact .expense-trend-summary{display:none}
+body.expense-compact .expense-legend{padding:0 16px 5px;gap:8px 12px;font-size:9px}
+body.expense-compact .expense-analysis-grid .expense-chart{height:200px;min-height:0;max-height:200px;min-width:460px;width:100%}
+body.expense-compact .expense-chart-scroll{padding:0 6px 5px}
+body.expense-compact .expense-destinations{padding:8px 15px 14px;gap:12px;justify-content:flex-start}
+body.expense-compact .expense-destinations .donut{width:105px;height:105px}
+body.expense-compact .expense-destination-list{min-width:120px;max-height:185px}
+body.expense-compact .expense-destination-row{padding:7px 0}
+body.expense-compact .expense-overview-secondary{display:block}
+body.expense-compact .expense-ledger,body.expense-compact .expense-details{margin-bottom:12px}
+body.expense-compact .expense-ledger td,body.expense-compact .expense-ledger th{padding:10px 16px}
+body.expense-compact .expense-ledger .text-button{padding:0;font-size:11px}
+@media(max-width:900px){body.expense-compact .expense-analysis-grid{grid-template-columns:1fr}body.expense-compact .expense-metrics .hero-number,body.expense-compact .expense-metrics .metric-value{font-size:21px}}
+@media(max-width:640px){body.expense-compact .content{padding-top:10px}body.expense-compact .expense-metrics{grid-template-columns:1fr 1fr;gap:8px}body.expense-compact .expense-metrics .metric-card,body.expense-compact .expense-metrics .total-card{padding:11px 12px;min-height:94px}body.expense-compact .expense-toolbar>.button-row{width:auto;margin-left:auto}body.expense-compact .expense-toolbar>.button-row .text-button{display:none}body.expense-compact .expense-month-controls{justify-content:flex-start}body.expense-compact .expense-month-controls label{flex:none}body.expense-compact .expense-map-node{font-size:10px}body.expense-compact .expense-map-home{font-size:12px}body.expense-compact .expense-analysis-grid .expense-chart{height:185px;max-height:185px}}
+
+/* The ring's explanatory label sits outside the chart, never on its stroke. */
+.expense-distribution{container-type:inline-size}
+.expense-destinations,body.expense-compact .expense-destinations{display:grid;grid-template-columns:112px minmax(0,1fr);align-items:center;gap:18px;padding:12px 16px 16px}
+.expense-ring{width:112px;min-width:0;text-align:center}
+.expense-ring .donut,body.expense-compact .expense-ring .donut{width:112px;height:112px;margin:0 auto}
+.expense-ring .donut>div{gap:2px;pointer-events:none}
+.expense-ring .donut strong{font-size:26px;line-height:28px;font-weight:500}
+.expense-ring .donut span{font-size:10px;line-height:12px;color:#84917b}
+.expense-ring-caption{display:block;font-size:10px;line-height:16px;margin-top:6px;color:#839277}
+.expense-destination-list,body.expense-compact .expense-destination-list{min-width:0;max-width:100%;max-height:185px;overflow-y:auto;overflow-x:hidden;padding-right:5px}
+.expense-destination-row,body.expense-compact .expense-destination-row{display:grid;grid-template-columns:9px minmax(0,1fr) auto;gap:9px;align-items:start;padding:8px 0}
+.expense-destination-row>svg{margin-top:4px}
+.expense-destination-row>div{min-width:0;line-height:1.5}
+.expense-destination-row>strong{white-space:nowrap;font-size:12px;line-height:1.5}
+.expense-destination-row small{line-height:1.5;margin-top:4px}
+@container(max-width:320px){.expense-destinations,body.expense-compact .expense-destinations{grid-template-columns:1fr;gap:10px}.expense-ring{justify-self:center}.expense-destination-list,body.expense-compact .expense-destination-list{width:100%;max-height:175px}}
+.expense-chart-window .expense-chart-scroll,body.expense-compact .expense-chart-window .expense-chart-scroll{overflow-x:auto;scrollbar-width:none;padding:0 0 3px}
+.expense-chart-window .expense-chart-scroll::-webkit-scrollbar{display:none}
+.expense-chart-window svg.expense-chart,body.expense-compact .expense-chart-window svg.expense-chart{width:auto;min-width:0;max-width:none;height:210px;min-height:210px;max-height:none}
+.expense-month-column{cursor:pointer}.expense-month-column:focus-visible{outline:2px solid #4c7756;outline-offset:-3px}.expense-month-column:hover .expense-month-hit{fill:#6b98570d}
+.expense-chart-navigation{display:flex;align-items:center;gap:10px;padding:3px 16px 8px;font-size:10px;color:#839376}
+.expense-chart-navigation input[type=range]{flex:1;min-width:0;width:100%;height:16px;padding:0;margin:0;border:0;border-radius:8px;accent-color:#66875b;background:transparent;box-shadow:none;cursor:ew-resize}
+.expense-chart-navigation span{flex-shrink:0;font-variant-numeric:tabular-nums}
+.expense-chart-hint{font-size:9px;color:#94a187;line-height:1.5;padding:0 16px 8px}
+body.expense-compact .expense-trend>.panel-heading p{display:none}
+body.expense-compact .expense-chart-hint{display:none}

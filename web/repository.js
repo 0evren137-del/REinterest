@@ -7,7 +7,10 @@ export class LocalRepository {
   async load() {
     const text = localStorage.getItem(KEY);
     this.baseline = text;
-    return text ? validateData(JSON.parse(text)) : emptyData();
+    if (!text) return emptyData();
+    const original = JSON.parse(text), checked = validateData(original);
+    if (JSON.stringify(original) !== JSON.stringify(checked)) return this.save(checked);
+    return checked;
   }
   async save(data) {
     const checked = validateData(data);

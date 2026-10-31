@@ -1,10 +1,13 @@
 import { CURRENCIES, emptyData, today, uid, ordered, latest, total, performance, periodGain, demoData, validateData, deleteAsset, buildPartialSnapshot, overviewSnapshot, searchAssets, allocationHierarchy } from './domain.js';
 import { LocalRepository } from './repository.js';
+import { fetchExchange } from './exchange.js';
+import { createExpenseUI } from './expenses-view.js';
 
 const repository = new LocalRepository();
 const app = document.querySelector('#app');
 const modal = document.querySelector('#modal');
 let data = emptyData(), personalData = null, demo = false, page = 'overview', draft = null, dirty = false, filter = 'all';
+let space = 'assets';
 let toastTimer;
 let assetSelection = {};
 let allocationPath = [];
@@ -22,13 +25,15 @@ const icons = {
   record: '<path d="M12 4v16M4 12h16"/>',
   assets: '<rect x="3" y="5" width="18" height="15" rx="3"/><path d="M3 9h18M16 14h2M7 5V3h10v2"/>',
   history: '<path d="M3 11a9 9 0 1 1 2.5 7M3 4v7h7M12 7v5l3 2"/>',
+  expenses: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 11h18M7 17h2M12 15h2M17 14v4"/>',
   settings: '<path d="M12 3v12m-5-5 5 5 5-5M4 15v5h16v-5"/>',
   arrow: '<path d="m7 17 10-10M7 7h10v10"/>',
   shield: '<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6zM8 12l3 3 5-6"/>',
   leaf: '<path d="M19 4C9 2 2 7 5 15s16 5 14-11ZM6 18 16 8"/>'
 };
-const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.assets}</svg>`;
+const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons[({ 'expense-records': 'record', 'expense-categories': 'assets', 'expense-budget': 'history' })[name]] || icons.assets}</svg>`;
 const button = (action, label, cls = 'primary', attrs = '') => `<button type="button" class="${cls}" data-action="${action}" ${attrs}>${label}</button>`;
+const expenseUI = createExpenseUI({ getData: () => data, persist, render, navigate, modal, toast, today });
 
 function toast(message) {
   clearTimeout(toastTimer);
@@ -46,25 +51,38 @@ async function persist(next) {
   else data = await repository.save(next);
 }
 function discard() { return !dirty || confirm('本次录入尚未保存，确定离开并放弃修改吗？'); }
-function navigate(next) {
+function navigate(next, { preserveScroll = false } = {}) {
   if (!discard()) return;
-  dirty = false; draft = null; page = next; render(); window.scrollTo(0, 0);
+  const scrollX = window.scrollX, scrollY = window.scrollY;
+  const mapScroll = document.querySelector('.expense-map-scroll')?.scrollLeft || 0;
+  if (next !== 'settings') space = next.startsWith('expense') ? 'expenses' : 'assets';
+  if (next === 'expenses') expenseUI.resetScope();
+  dirty = false; draft = null; page = next; render();
+  if (preserveScroll) {
+    const map = document.querySelector('.expense-map-scroll'); if (map) map.scrollLeft = mapScroll;
+    window.scrollTo(scrollX, scrollY);
+  } else window.scrollTo(0, 0);
 }
 
 function render() {
-  const titles = { overview: ['资产总览', '把生活的积累，慢慢记下来。'], record: ['记录资产', '不必每天记账，按自己的节奏更新。'], assets: ['我的资产', '每一笔积累，都有自己的位置。'], history: ['历史记录', '回看每一个阶段的资产快照。'], settings: ['备份与指南', '数据在你手里，使用也可以很简单。'] };
+  document.body.classList.toggle('expense-compact', ['expenses', 'expense-detail'].includes(page));
+  const titles = { overview: ['资产总览', '把生活的积累，慢慢记下来。'], expenses: ['开销计划', '看清钱花在哪里，也看清未来还剩多少余地。'], record: ['记录资产', '不必每天记账，按自己的节奏更新。'], assets: ['我的资产', '每一笔积累，都有自己的位置。'], history: ['历史记录', '回看每一个阶段的资产快照。'], settings: ['备份与指南', '数据在你手里，使用也可以很简单。'] };
+  Object.assign(titles, { expenses: ['开销总览', '从全部开销看起，按类别看清消费与未来安排。'], 'expense-records': ['消费记录', '单独记录、检索和编辑每一笔消费与计划。'], 'expense-categories': ['分类与额度', '管理自己的分类方式，为每一类设置月度额度。'], 'expense-budget': ['额度计划', '逐月查看未来占用、超额结转和剩余额度。'], 'expense-detail': [expenseUI.title(), '这个类别的开销趋势、预计额度和具体消费去向。'] });
   const [title, subtitle] = titles[page];
+  const navigation = space === 'expenses' ? { expenses: '开销总览', 'expense-records': '消费记录', 'expense-categories': '分类与额度', 'expense-budget': '额度计划', settings: '备份与指南' } : { overview: '资产总览', record: '记录资产', assets: '我的资产', history: '历史记录', settings: '备份与指南' };
+  const activePage = page === 'expense-detail' ? 'expenses' : page;
   app.innerHTML = `<aside class="sidebar">
     <a class="brand" href="#" data-action="nav" data-page="overview"><span class="brand-icon">${icon('leaf')}</span><span>有数<span class="brand-en">REINTEREST</span></span></a>
-    <div class="workspace-label">我的财务空间</div>
-    <nav aria-label="主导航">${Object.entries({ overview: '资产总览', record: '记录资产', assets: '我的资产', history: '历史记录', settings: '备份与指南' }).map(([key, label]) => `<button data-action="nav" data-page="${key}" class="nav-item ${page === key ? 'active' : ''}" ${page === key ? 'aria-current="page"' : ''}>${icon(key)}<span>${label}</span>${page === key ? '<i></i>' : ''}</button>`).join('')}</nav>
-    <div class="sidebar-bottom"><div class="local-badge"><span class="status-dot"></span>本地离线版 <span>v0.1</span></div><p>慢一点，也能看清成长。</p></div>
+    <div class="workspace-label">${space === 'expenses' ? '开销计划空间' : '资产管理空间'}</div>
+    <nav aria-label="${space === 'expenses' ? '开销导航' : '资产导航'}">${Object.entries(navigation).map(([key, label]) => `<button data-action="nav" data-page="${key}" class="nav-item ${activePage === key ? 'active' : ''}" ${activePage === key ? 'aria-current="page"' : ''}>${icon(key)}<span>${label}</span>${activePage === key ? '<i></i>' : ''}</button>`).join('')}</nav>
+    <div class="sidebar-bottom"><div class="local-badge"><span class="status-dot"></span>浏览器独立保存 <span>v0.2</span></div><p>慢一点，也能看清成长。</p></div>
   </aside>
-  <main><header class="topbar"><span>个人资产手账 <span class="divider">/</span> ${title}</span><span class="privacy">${icon('shield')}仅保存在当前浏览器</span></header>
+  <main><header class="topbar"><div class="space-switch" role="group" aria-label="切换财务空间">${button('nav', '资产总览', `space-tab ${space === 'assets' ? 'selected' : ''}`, `data-page="overview" aria-pressed="${space === 'assets'}"`)}${button('nav', '开销计划', `space-tab ${space === 'expenses' ? 'selected' : ''}`, `data-page="expenses" aria-pressed="${space === 'expenses'}"`)}</div><span class="privacy">${icon('shield')}仅保存在当前浏览器</span></header>
     <div class="content">${demo ? `<div class="demo-banner"><span><strong>示例体验</strong> · 以下都是虚构数据，修改不会覆盖你的个人记录。</span>${button('exit-demo', '退出示例', 'text-button')}</div>` : ''}
-    <div class="page-heading"><div><div class="eyebrow">YOUR MONEY, AT A GLANCE</div><h1>${title}</h1><p>${subtitle}</p></div>${page === 'overview' ? button('nav', `${icon('record')}记录本次资产`, 'primary', 'data-page="record"') : page === 'assets' ? button('add-asset', `${icon('record')}新增资产`) : ''}</div>
-    <div id="page-content">${({ overview: overviewView, record: recordView, assets: assetsView, history: historyView, settings: settingsView })[page]()}</div>
-    <footer>有数 · 关注积累，也关注生活 <span>离线可用 / 不连接金融账户</span></footer></div></main>`;
+    <div class="page-heading"><div><div class="eyebrow">${space === 'expenses' ? 'SPEND WITH INTENTION' : 'YOUR MONEY, AT A GLANCE'}</div>${['expenses', 'expense-detail'].includes(page) ? expenseUI.heading(title) : `<h1>${e(title)}</h1>`}<p>${subtitle}</p></div>${page === 'overview' ? button('nav', `${icon('record')}记录本次资产`, 'primary', 'data-page="record"') : page === 'assets' ? button('add-asset', `${icon('record')}新增资产`) : ''}</div>
+    <div id="page-content">${page.startsWith('expense') ? expenseUI.view(page) : ({ overview: overviewView, record: recordView, assets: assetsView, history: historyView, settings: settingsView })[page]()}</div>
+    <footer>有数 · 关注积累，也关注生活 <span>记录仅存此浏览器 / 换设备不自动同步</span></footer></div></main>`;
+  expenseUI.mountCharts();
 }
 
 function emptyView(title, description, actions) {
@@ -72,7 +90,7 @@ function emptyView(title, description, actions) {
 }
 function overviewView() {
   const current = overviewSnapshot(data), snapshots = ordered(data), previous = snapshots.at(-2);
-  if (!current) return emptyView(data.assets.length ? '资产清单准备好了，记下第一个起点。' : '从一份资产清单，开始有数。', '银行存款、黄金、基金、海外资产，都可以放在这里。\n第一次只需要记录现在的金额，之后再慢慢看变化。', `${button('nav', data.assets.length ? '记录第一份快照' : '添加我的第一项资产', 'primary', `data-page="${data.assets.length ? 'record' : 'assets'}"`)}${button('demo', '先用示例逛一逛', 'secondary')}`) + `<div class="intro-grid"><div>${icon('assets')}<h3>资产放在哪里，一目了然</h3><p>国内 / 国外，储蓄 / 投资，按自己的习惯分类。</p></div><div>${icon('history')}<h3>想起来时，记录一次就好</h3><p>不固定周期，用每一份快照串起资产变化。</p></div><div>${icon('shield')}<h3>离线使用，自主备份</h3><p>数据留在当前浏览器，可随时导出保存。</p></div></div>`;
+  if (!current) return emptyView(data.assets.length ? '资产清单准备好了，记下第一个起点。' : '从一份资产清单，开始有数。', '银行存款、黄金、基金、海外资产，都可以放在这里。\n第一次只需要记录现在的金额，之后再慢慢看变化。', `${button('nav', data.assets.length ? '记录第一份快照' : '添加我的第一项资产', 'primary', `data-page="${data.assets.length ? 'record' : 'assets'}"`)}${button('demo', '先用示例逛一逛', 'secondary')}`) + `<div class="intro-grid"><div>${icon('assets')}<h3>资产放在哪里，一目了然</h3><p>国内 / 国外，储蓄 / 投资，按自己的习惯分类。</p></div><div>${icon('history')}<h3>想起来时，记录一次就好</h3><p>不固定周期，用每一份快照串起资产变化。</p></div><div>${icon('shield')}<h3>独立记录，自主备份</h3><p>每个浏览器独立保存，可随时导出备份。</p></div></div>`;
   const change = previous ? total(current) - total(previous) : null;
   const gain = periodGain(previous, current);
   const search = assetSearchModel();
@@ -255,10 +273,7 @@ async function updateExchangeRates(button) {
   button.disabled = true; button.textContent = '正在获取…';
   status.textContent = '正在获取 ' + date + ' 当日或之前最近的参考汇率…';
   try {
-    const params = new URLSearchParams({ currencies: inputs.map(i => i.name.slice(5)).join(','), date });
-    const response = await fetch('/api/exchange-rates?' + params, { signal: AbortSignal.timeout(15000) });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || '汇率获取失败');
+    const result = await fetchExchange(inputs.map(i => i.name.slice(5)), date);
     if (!form.isConnected || form.elements.date.value !== date) return;
     // Validate the whole response before changing any fields.
     if (inputs.some(input => { const c = input.name.slice(5); return !Number.isFinite(result.rates?.[c]) || result.rates[c] <= 0 || result.rates[c] > 1000000 || !/^\d{4}-\d{2}-\d{2}$/.test(result.dates?.[c]) || result.dates[c] > date; })) throw new Error('汇率数据异常，请重试');
@@ -334,9 +349,9 @@ function showSnapshot(id) {
   filter = savedFilter; modal.showModal();
 }
 function settingsView() {
-  return `<div class="settings-grid"><section class="panel settings-panel"><span class="feature-icon">${icon('settings')}</span><h2>把数据握在自己手里</h2><p>数据保存在这个浏览器、这个网址下。关掉网页再打开还在；换浏览器、清理网站数据或更换网址后不会自动跟随。</p><div class="backup-stats"><span><b>${data.assets.length}</b> 项资产</span><span><b>${data.snapshots.length}</b> 份快照</span></div><div class="button-row">${button('export', '导出 JSON 备份')}${button('import', '从备份恢复', 'secondary')}</div><p class="field-hint">备份是未加密的文件，请保存在自己的安全位置，不要上传到 GitHub。导入会先校验格式，再由你确认替换。</p><input type="file" id="import-file" accept=".json,application/json" hidden></section>
+  return `<div class="settings-grid"><section class="panel settings-panel"><span class="feature-icon">${icon('settings')}</span><h2>把数据握在自己手里</h2><p>数据仅保存在当前浏览器、当前网址下，不上传资产记录。分享链接后，每个浏览器各自记录；同一浏览器配置中的使用者共用一份记录。关掉网页再打开还在，换设备或浏览器不会自动同步。清理网站数据或使用无痕模式可能丢失记录，请定期导出备份。</p><div class="backup-stats"><span><b>${data.assets.length}</b> 项资产</span><span><b>${data.snapshots.length}</b> 份快照</span><span><b>${data.expenses?.entries.length || 0}</b> 笔开销</span></div><div class="button-row">${button('export', '导出 JSON 备份')}${button('import', '从备份恢复', 'secondary')}</div><p class="field-hint">备份是未加密的文件，请保存在自己的安全位置，不要上传到 GitHub。导入会先校验格式，再由你确认替换。</p><input type="file" id="import-file" accept=".json,application/json" hidden></section>
   <section class="panel settings-panel"><span class="feature-icon">${icon('leaf')}</span><h2>先试试，再开始</h2><p>示例数据包含国内储蓄、黄金、基金和海外资产。你可以自由体验，退出后恢复个人数据。</p>${button(demo ? 'exit-demo' : 'demo', demo ? '退出示例' : '进入示例体验', 'secondary')}<div class="offline-note"><span class="status-dot"></span>没有第三方脚本、网络字体或自动接口</div></section></div>
-  <section class="panel guide"><h2>几个容易混淆的地方</h2><details open><summary>资产增加，不一定等于赚钱</summary><p>例如上次基金 10,000，本次 12,500，期间投入 2,000，则收益为 500。公式：本次金额 − 上次金额 − 净投入 + 已派出收益。</p></details><details><summary>收益率怎么计算？</summary><p>区间收益率采用 Modified Dietz：收益 ÷（期初金额 + 按持有时间加权的资金进出）。每项资产从它上次实际金额更新日开始计算；未更新项不显示新的收益率。转入越早，参与计算的本金越多。这是区间估算收益率，不是年化；加权本金小于或等于 0 时不显示收益率。已派出收益按期末处理，复杂交易请以券商账单为准。</p></details><details><summary>国外资产与汇率</summary><p>1 美元值 7.1 元人民币时，USD 汇率填 7.1；日元也按 1 日元而不是 100 日元填写。可点击“联网更新汇率”，免费获取记录日期当日或之前最近的参考汇率，实际日期会显示在按钮旁；并非实时交易价。常用币种保留两位小数，小于 1 的汇率保留四位。填入后仍需点击保存才生效；失败可手动填写。仅点击按钮时联网，不上传资产金额或账户信息。原币收益和收益率不包含汇率损益。总资产变化包含汇率变化；首页收益把各项原币收益按本次汇率折算，不等于整个组合的人民币总回报。</p></details><details><summary>转账、买卖和分红怎么记？</summary><p>在两个已建资产之间转账，要在转出项填负数、转入项填正数，日期填实际发生日。资产内的买卖不需要记资金进出。卖出并转走资金时填负数，清仓后的金额填 0。派到资产外的利息或分红填“已派出收益”；接收这笔钱的另一个资产填正数投入，避免两次计为收益。</p></details><details><summary>手机现在能用吗？以后能同步吗？</summary><p>界面已适配手机，但当前服务只在这台电脑本地运行，手机不能直接访问电脑的 localhost。本地版也没有跨设备同步。以后接入云端时会新增登录、云端数据保存和冲突处理，再把本地备份迁移进去。</p></details><details><summary>如何运行、保存代码版本？</summary><p>在项目文件夹双击“打开有数.vbs”，会自动启动后台服务并打开浏览器，无需复制网址。也可以在终端输入 npm start。代码与资产记录相互独立；GitHub 只管理代码。项目 README 中有运行说明和 GitHub 入门步骤。</p></details></section>`;
+  <section class="panel guide"><h2>几个容易混淆的地方</h2><details open><summary>资产增加，不一定等于赚钱</summary><p>例如上次基金 10,000，本次 12,500，期间投入 2,000，则收益为 500。公式：本次金额 − 上次金额 − 净投入 + 已派出收益。</p></details><details><summary>收益率怎么计算？</summary><p>区间收益率采用 Modified Dietz：收益 ÷（期初金额 + 按持有时间加权的资金进出）。每项资产从它上次实际金额更新日开始计算；未更新项不显示新的收益率。转入越早，参与计算的本金越多。这是区间估算收益率，不是年化；加权本金小于或等于 0 时不显示收益率。已派出收益按期末处理，复杂交易请以券商账单为准。</p></details><details><summary>国外资产与汇率</summary><p>1 美元值 7.1 元人民币时，USD 汇率填 7.1；日元也按 1 日元而不是 100 日元填写。可点击“联网更新汇率”，免费获取记录日期当日或之前最近的参考汇率，实际日期会显示在按钮旁；并非实时交易价。常用币种保留两位小数，小于 1 的汇率保留四位。填入后仍需点击保存才生效；失败可手动填写。仅点击按钮时联网，不上传资产金额或账户信息。原币收益和收益率不包含汇率损益。总资产变化包含汇率变化；首页收益把各项原币收益按本次汇率折算，不等于整个组合的人民币总回报。</p></details><details><summary>转账、买卖和分红怎么记？</summary><p>在两个已建资产之间转账，要在转出项填负数、转入项填正数，日期填实际发生日。资产内的买卖不需要记资金进出。卖出并转走资金时填负数，清仓后的金额填 0。派到资产外的利息或分红填“已派出收益”；接收这笔钱的另一个资产填正数投入，避免两次计为收益。</p></details><details><summary>手机能用吗？换设备怎么继续？</summary><p>手机和电脑都可以打开分享链接使用，无需安装或登录。数据只保存在各自浏览器，设备之间不会自动同步。换设备时先在原浏览器导出 JSON 备份，再在新设备打开同一链接并导入。导入会替换新设备当前记录，不会合并。</p></details><details><summary>如何打开、分享和迁移原记录？</summary><p>打开在线链接即可使用，也可以把链接分享给他人，他人的记录不会出现在你的浏览器里。原本电脑本地版的记录不会自动转移：请在原网址导出备份，再到在线网址导入。代码和资产记录相互独立；发布网页不会发布你的浏览器记录。</p></details></section>`;
 }
 
 app.addEventListener('click', async event => {
@@ -345,7 +360,11 @@ app.addEventListener('click', async event => {
   event.preventDefault();
   const { action, id } = target.dataset;
   try {
-    if (action === 'nav') navigate(target.dataset.page);
+    if (await expenseUI.click(target)) return;
+    if (action === 'nav') {
+      if (target.closest('nav') && target.dataset.page.startsWith('expense') && !dirty) expenseUI.resetScope();
+      navigate(target.dataset.page, { preserveScroll: Boolean(target.closest('.expense-map')) });
+    }
     if (action === 'update-rates') await updateExchangeRates(target);
     if (action === 'add-asset') openAsset();
     if (action === 'edit-asset') openAsset(id);
@@ -363,8 +382,8 @@ app.addEventListener('click', async event => {
         toast(count ? '资产及其历史记录已删除，相关统计已更新' : '资产已删除');
       }
     }
-    if (action === 'demo' && discard()) { personalData = structuredClone(data); demo = true; data = demoData(); assetSelection = {}; draft = null; dirty = false; page = 'overview'; render(); }
-    if (action === 'exit-demo' && discard()) { data = personalData; personalData = null; demo = false; assetSelection = {}; draft = null; dirty = false; page = 'overview'; render(); }
+    if (action === 'demo' && discard()) { personalData = structuredClone(data); demo = true; data = demoData(); assetSelection = {}; draft = null; dirty = false; space = 'assets'; page = 'overview'; render(); }
+    if (action === 'exit-demo' && discard()) { data = personalData; personalData = null; demo = false; assetSelection = {}; draft = null; dirty = false; space = 'assets'; page = 'overview'; render(); }
     if (action === 'asset-search-reset') { assetSelection = {}; applyAssetFilters(true); }
     if (action === 'asset-search-filter') {
       const { level, value } = target.dataset;
@@ -396,12 +415,26 @@ app.addEventListener('click', async event => {
     if (action === 'import') document.querySelector('#import-file').click();
   } catch (error) { toast(error.message); }
 });
-modal.addEventListener('click', event => {
+modal.addEventListener('click', async event => {
+  const expenseTarget = event.target.closest('[data-action^="expense-"]');
+  if (expenseTarget) {
+    event.preventDefault();
+    try { await expenseUI.click(expenseTarget); } catch (error) { toast(error.message); }
+    return;
+  }
   if (event.target.closest('[data-action="close-modal"]')) modal.close();
 });
 modal.addEventListener('submit', async event => {
   event.preventDefault();
   const form = event.target;
+  if (form.matches('[data-expense-form]')) {
+    const submitButton = form.querySelector('[type="submit"]');
+    if (submitButton.disabled) return;
+    submitButton.disabled = true;
+    try { await expenseUI.submit(form); } catch (error) { formError(form, error.message); }
+    finally { submitButton.disabled = false; }
+    return;
+  }
   if (form.getAttribute('id') !== 'asset-form') return;
   try {
     const fields = new FormData(form), id = fields.get('id');
@@ -427,6 +460,7 @@ app.addEventListener('submit', async event => {
   } catch (error) { formError(form, error.message); }
 });
 app.addEventListener('input', event => {
+  if (expenseUI.input(event.target)) return;
   if (event.target.matches('[data-asset-query]')) { assetSelection.query = event.target.value; applyAssetFilters(); return; }
   if (!event.target.closest('#record-form') || event.target.id === 'record-date') return;
   const section = event.target.closest('.record-item');
@@ -434,6 +468,7 @@ app.addEventListener('input', event => {
   else if (event.target.name?.startsWith('rate-')) { editedRates.add(event.target.name.slice(5)); dirty = true; }
 });
 app.addEventListener('change', async event => {
+  if (expenseUI.change(event.target)) return;
   if (event.target.id === 'record-date') {
     const date = event.target.value;
     if (!date || date > today()) { event.target.value = draft.date; toast('请选择不晚于今天的有效日期'); return; }
@@ -445,13 +480,13 @@ app.addEventListener('change', async event => {
     try {
       if (file.size > 20_000_000) throw new Error('备份文件过大，最大支持 20MB');
       const imported = await repository.import(await file.text());
-      if (!confirm(`将以备份中的 ${imported.assets.length} 项资产、${imported.snapshots.length} 份快照替换${demo ? '当前示例' : '当前本地数据'}。请确认已导出原数据备份，是否继续？`)) return;
+      if (!confirm(`将以备份中的 ${imported.assets.length} 项资产、${imported.snapshots.length} 份快照、${imported.expenses?.entries.length || 0} 笔开销及其分类额度替换${demo ? '当前示例' : '当前本地数据'}。旧版备份不含开销，恢复后会清空现有开销。请确认已导出原数据备份，是否继续？`)) return;
       await persist(imported); draft = null; dirty = false; render(); toast('备份已恢复');
     } catch (error) { toast(`导入失败：${error.message}`); }
     finally { const input = document.querySelector('#import-file'); if (input) input.value = ''; }
   }
 });
-window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
+window.addEventListener('beforeunload', event => { if (dirty || expenseUI.isDirty()) { event.preventDefault(); event.returnValue = ''; } });
 window.addEventListener('storage', event => { if (event.key === 'reinterest.local.v1') toast('另一个标签页已修改数据，请先导出当前备份，再刷新页面。'); });
 try { data = await repository.load(); render(); }
 catch (error) {

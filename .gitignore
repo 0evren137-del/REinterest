@@ -7,3 +7,15 @@ backups/
 .env.*
 !.env.example
 .DS_Store
+online-site/.git/
+online-site/.openai/local/
+online-site/dist/
+online-site/.gitignore
+online-deploy.tar.gz
+deploy/
+.netlify/
+REinterest-static.zip
+REinterest-netlify.zip
+
+# Local hosting workspace (generated site and provider metadata)
+online-site/

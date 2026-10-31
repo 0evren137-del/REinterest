@@ -1,4 +1,5 @@
 import { CURRENCIES } from './domain.js';
+import { EXCHANGE_ENDPOINT } from './exchange-config.js';
 
 export function exchangeRequest(currencies, date) {
   const codes = [...new Set(currencies)];
@@ -27,7 +28,7 @@ export function normalizeExchange(rows, currencies, date) {
 
 export async function fetchExchange(currencies, date, fetcher = fetch) {
   const params = exchangeRequest(currencies, date);
-  const response = await fetcher('https://api.frankfurter.dev/v2/rates?' + params, { signal: AbortSignal.timeout(12000), redirect: 'error' });
+  const response = await fetcher(EXCHANGE_ENDPOINT + '?' + params, { signal: AbortSignal.timeout(12000), redirect: 'error' });
   if (!response.ok) throw new Error('汇率服务暂不可用');
   return normalizeExchange(await response.json(), currencies, date);
 }
